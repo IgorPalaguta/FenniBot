@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сапер</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #FFFFFF;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(10, 30px);
+            grid-gap: 2px;
+            margin-left:30px;
+        }
+        .cell {
+            width: 30px;
+            height: 30px;
+            background-color: #FFD700;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+        }
+        .hidden {
+            background-color: #666;
+        }
+        .mine {
+            background-color: red;
+        }
+        .status {
+            margin-top: 20px;
+            font-size: 24px;
+            text-align: center;
+        }
+        .button {
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #FFD700;
+            border: none;
+            border-radius: 5px;
+            color: #121212;
+            margin-top: 20px;
+            display: block;
+            text-align: center;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .nav-buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="board" id="board"></div>
+        <div class="status" id="status">Грайте обережно!</div>
+        <button class="button" id="resetButton">Перезапустити гру</button>
+        <div class="nav-buttons">
+            <button class="button" id="clicker-button">Клікер</button>
+            <button class="button" id="tictactoe-button">Хрестики-нулики</button>
+            <button class="button" id="miner-button">Сапер</button>
+        </div>
+    </div>
+
+    <script>
+        const board = document.getElementById('board');
+        const statusDisplay = document.getElementById('status');
+        const resetButton = document.getElementById('resetButton');
+        const clickerButton = document.getElementById('clicker-button');
+        const tictactoeButton = document.getElementById('tictactoe-button');
+        const minerButton = document.getElementById('miner-button');
+
+        const boardSize = 10;
+        const mineCount = 10;
+        let cells = [];
+        let mines = [];
+        let gameActive = true;
+
+        const initBoard = () => {
+            board.innerHTML = '';
+            cells = [];
+            mines = [];
+            gameActive = true;
+            statusDisplay.textContent = 'Грайте обережно!';
+
+            // Create board
+            for (let i = 0; i < boardSize; i++) {
+                cells[i] = [];
+                for (let j = 0; j < boardSize; j++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell', 'hidden');
+                    cell.setAttribute('data-row', i);
+                    cell.setAttribute('data-col', j);
+                    cell.addEventListener('click', handleCellClick);
+                    board.appendChild(cell);
+                    cells[i][j] = cell;
+                }
+            }
+
+            // Place mines
+            for (let i = 0; i < mineCount; i++) {
+                let placed = false;
+                while (!placed) {
+                    const row = Math.floor(Math.random() * boardSize);
+                    const col = Math.floor(Math.random() * boardSize);
+                    if (!mines.some(mine => mine.row === row && mine.col === col)) {
+                        mines.push({ row, col });
+                        placed = true;
+                    }
+                }
+            }
+        };
+
+        const handleCellClick = (event) => {
+            if (!gameActive) return;
+
+            const cell = event.target;
+            const row = parseInt(cell.getAttribute('data-row'));
+            const col = parseInt(cell.getAttribute('data-col'));
+
+            if (mines.some(mine => mine.row === row && mine.col === col)) {
+                cell.classList.remove('hidden');
+                cell.classList.add('mine');
+                cell.textContent = '💣';
+                gameOver(false);
+            } else {
+                revealCell(row, col);
+                checkWin();
+            }
+        };
+
+        const revealCell = (row, col) => {
+            if (row < 0 || row >= boardSize || col < 0 || col >= boardSize) return;
+            const cell = cells[row][col];
+            if (!cell.classList.contains('hidden')) return;
+
+            cell.classList.remove('hidden');
+            const mineCount = countMines(row, col);
+            if (mineCount > 0) {
+                cell.textContent = mineCount;
+            } else {
+                // Reveal surrounding cells
+                revealCell(row - 1, col);
+                revealCell(row + 1, col);
+                revealCell(row, col - 1);
+                revealCell(row, col + 1);
+                revealCell(row - 1, col - 1);
+                revealCell(row - 1, col + 1);
+                revealCell(row + 1, col - 1);
+                revealCell(row + 1, col + 1);
+            }
+        };
+
+        const countMines = (row, col) => {
+            let count = 0;
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    const newRow = row + i;
+                    const newCol = col + j;
+                    if (newRow >= 0 && newRow < boardSize && newCol >= 0 && newCol < boardSize) {
+                        if (mines.some(mine => mine.row === newRow && mine.col === newCol)) {
+                            count++;
+                        }
+                    }
+                }
+            }
+            return count;
+        };
+
+        const checkWin = () => {
+            let hiddenCount = 0;
+            for (let i = 0; i < boardSize; i++) {
+                for (let j = 0; j < boardSize; j++) {
+                    if (cells[i][j].classList.contains('hidden')) {
+                        hiddenCount++;
+                    }
+                }
+            }
+            if (hiddenCount === mineCount) {
+                gameOver(true);
+            }
+        };
+
+        const gameOver = (won) => {
+            gameActive = false;
+            statusDisplay.textContent = won ? 'Ви виграли!' : 'Гра закінчена!';
+            // Reveal all mines
+            if (!won) {
+                mines.forEach(mine => {
+                    const cell = cells[mine.row][mine.col];
+                    cell.classList.remove('hidden');
+                    cell.classList.add('mine');
+                    cell.textContent = '💣';
+                });
+            }
+        };
+
+        resetButton.addEventListener('click', initBoard);
+
+        // Обробники подій для кнопок
+        clickerButton.addEventListener('click', () => {
+            window.location.href = 'tap.html';
+        });
+
+        tictactoeButton.addEventListener('click', () => {
+            window.location.href = 'tictac.html';
+        });
+
+        minerButton.addEventListener('click', () => {
+            window.location.href = 'miner.html';
+        });
+
+        // Ініціалізація Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+
+        // Initialize the board on page load
+        initBoard();
+    </script>
+</body>
+</html>
