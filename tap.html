@@ -53,6 +53,11 @@
             score++;
             scoreDisplay.textContent = 'Бали: ' + score;
         });
+
+        // Ініціалізація Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.ready();
     </script>
 </body>
 </html>
+
