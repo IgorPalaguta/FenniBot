@@ -9,6 +9,7 @@
             background-color: #121212;
             color: #FFFFFF;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
@@ -32,26 +33,74 @@
             user-select: none;
             margin: 0 auto;
         }
+        .photo {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            cursor: pointer;
+            user-select: none;
+        }
         .score {
             margin-top: 20px;
             font-size: 24px;
+        }
+        .buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        .button {
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #FFD700;
+            border: none;
+            border-radius: 5px;
+            color: #121212;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="coin" id="coin">Монета</div>
-        <div class="score" id="score">Бали: 0</div>
+        <img src="image-removebg-preview.png" alt="Your Photo" id="coin" class="photo">
+        <div class="score" id="score">Coins: 0</div>
+        <div class="buttons">
+            <button class="button" id="clicker-button">Клікер</button>
+            <button class="button" id="tictactoe-button">Хрестики-нулики</button>
+            <button class="button" id="miner-button">Сапер</button>
+        </div>
     </div>
 
     <script>
-        let score = 0;
+        // При завантаженні сторінки читаємо значення балів з localStorage
+        let score = parseInt(localStorage.getItem('score')) || 0;
         const coin = document.getElementById('coin');
         const scoreDisplay = document.getElementById('score');
+
+        // Встановлюємо початкове значення балів
+        scoreDisplay.textContent = 'Бали: ' + score;
 
         coin.addEventListener('click', () => {
             score++;
             scoreDisplay.textContent = 'Бали: ' + score;
+
+            // При кожному кліку оновлюємо значення балів в localStorage
+            localStorage.setItem('score', score.toString());
+        });
+
+        // Обробники подій для кнопок
+        document.getElementById('clicker-button').addEventListener('click', () => {
+            window.location.href = 'tap.html';
+        });
+
+        document.getElementById('tictactoe-button').addEventListener('click', () => {
+            window.location.href = 'tictac.html';
+        });
+
+        document.getElementById('miner-button').addEventListener('click', () => {
+            window.location.href = 'miner.html';
         });
 
         // Ініціалізація Telegram Web App
