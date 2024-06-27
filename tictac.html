@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Хрестики-нулики</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #FFFFFF;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .notification {
+            position: fixed;
+            top: 10px;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 18px;
+            display: none;
+            z-index: 1000;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-gap: 5px;
+            margin:30px
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            background-color: #FFD700;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 36px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+        }
+        .cell.X, .cell.O {
+            color: #000000; /* Зробити символи чорного кольору */
+        }
+        .status {
+            margin-top: 20px;
+            font-size: 24px;
+            text-align: center;
+        }
+        .button {
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #FFD700;
+            border: none;
+            border-radius: 5px;
+            color: #121212;
+            margin-top: 20px;
+            display: block;
+            text-align: center;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .nav-buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="notification" id="notification">Ви отримали 50 coins!</div>
+    <div class="container">
+        <div class="board" id="board">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+        <div class="status" id="status">Ваш хід, гравець X</div>
+        <button class="button" id="resetButton">Перезапустити гру</button>
+        <div class="nav-buttons">
+            <button class="button" id="clicker-button">Клікер</button>
+            <button class="button" id="tictactoe-button">Хрестики-нулики</button>
+            <button class="button" id="miner-button">Сапер</button>
+        </div>
+    </div>
+
+    <script>
+        const board = document.getElementById('board');
+        const statusDisplay = document.getElementById('status');
+        const resetButton = document.getElementById('resetButton');
+        const clickerButton = document.getElementById('clicker-button');
+        const tictactoeButton = document.getElementById('tictactoe-button');
+        const minerButton = document.getElementById('miner-button');
+        const notification = document.getElementById('notification');
+        let cells = Array.from(document.querySelectorAll('.cell'));
+        let currentPlayer = 'X';
+        let gameActive = true;
+        let gameState = ['', '', '', '', '', '', '', '', ''];
+        let score = parseInt(localStorage.getItem('score')) || 0;
+
+        const winningConditions = [
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+            [0, 3, 6],
+            [1, 4, 7],
+            [2, 5, 8],
+            [0, 4, 8],
+            [2, 4, 6]
+        ];
+
+        const handleCellPlayed = (clickedCell, clickedCellIndex) => {
+            gameState[clickedCellIndex] = currentPlayer;
+            clickedCell.textContent = currentPlayer;
+            clickedCell.classList.add(currentPlayer);
+        };
+
+        const handlePlayerChange = () => {
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            statusDisplay.textContent = `Ваш хід, гравець ${currentPlayer}`;
+        };
+
+        const handleResultValidation = () => {
+            let roundWon = false;
+            for (let i = 0; i < winningConditions.length; i++) {
+                const winCondition = winningConditions[i];
+                let a = gameState[winCondition[0]];
+                let b = gameState[winCondition[1]];
+                let c = gameState[winCondition[2]];
+                if (a === '' || b === '' || c === '') {
+                    continue;
+                }
+                if (a === b && b === c) {
+                    roundWon = true;
+                    break;
+                }
+            }
+
+            if (roundWon) {
+                statusDisplay.textContent = `Гравець ${currentPlayer} виграв!`;
+                gameActive = false;
+                updateScore(50); // Додати 50 монет за перемогу
+                showNotification();
+                return;
+            }
+
+            let roundDraw = !gameState.includes('');
+            if (roundDraw) {
+                statusDisplay.textContent = 'Нічия!';
+                gameActive = false;
+                return;
+            }
+
+            handlePlayerChange();
+        };
+
+        const handleCellClick = (event) => {
+            const clickedCell = event.target;
+            const clickedCellIndex = parseInt(clickedCell.getAttribute('data-index'));
+
+            if (gameState[clickedCellIndex] !== '' || !gameActive) {
+                return;
+            }
+
+            handleCellPlayed(clickedCell, clickedCellIndex);
+            handleResultValidation();
+            if (gameActive && currentPlayer === 'O') {
+                handleComputerTurn();
+            }
+        };
+
+        const handleRestartGame = () => {
+            currentPlayer = 'X';
+            gameActive = true;
+            gameState = ['', '', '', '', '', '', '', '', ''];
+            statusDisplay.textContent = `Ваш хід, гравець ${currentPlayer}`;
+            cells.forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove('X');
+                cell.classList.remove('O');
+            });
+        };
+
+        const handleComputerTurn = () => {
+            let availableCells = gameState.map((value, index) => value === '' ? index : null).filter(val => val !== null);
+            let randomCellIndex = availableCells[Math.floor(Math.random() * availableCells.length)];
+            let cell = cells[randomCellIndex];
+
+            handleCellPlayed(cell, randomCellIndex);
+            handleResultValidation();
+        };
+
+        const updateScore = (points) => {
+            score += points;
+            localStorage.setItem('score', score.toString());
+        };
+
+        const showNotification = () => {
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000); // Повідомлення зникає через 3 секунди
+        };
+
+        cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+        resetButton.addEventListener('click', handleRestartGame);
+
+        // Обробники подій для кнопок
+        clickerButton.addEventListener('click', () => {
+            window.location.href = 'tap.html';
+        });
+
+        tictactoeButton.addEventListener('click', () => {
+            window.location.href = 'tictac.html';
+        });
+
+        minerButton.addEventListener('click', () => {
+            window.location.href = 'miner.html';
+        });
+
+        // Ініціалізація Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+    </script>
+</body>
+</html>
